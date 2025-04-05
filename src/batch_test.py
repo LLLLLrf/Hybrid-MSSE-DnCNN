@@ -6,15 +6,13 @@ import torchvision
 from dataset import MRIDenoisingDataset
 from utils import batch_PSNR, batch_SSIM
 import os
-from models import DnCNN
-from unet_models import RicianDenoisingUNet
-from SE_model import HybridDnCNN
-from pre_model import HybridDnCNNWithPreFilter
-from filter_model import HybridDnCNNWithLearnableFilter
-from se_filter_model import HybridDnCNNWithFilter
-from bilateral_model import HybridDnCNNWithPreprocessing
-from hybrid_FFDNet import HybridFFDNetWithPreprocessing
-from FFDNet import FFDNet
+from models.DnCNN import DnCNN
+from models.SE_model import HybridDnCNN
+from models.Hybrid_MSSE_DnCNN import HybridDnCNNWithPreprocessing
+from models.hybrid_FFDNet import HybridFFDNetWithPreprocessing
+from models.FFDNet import FFDNet
+from models.no_se_model import HybridDnCNN_NoMultiScale_WithPreprocessing, HybridDnCNN_NoSE_WithPreprocessing
+
 import random
 import csv
 from pytorch_msssim import ssim as calc_ssim
@@ -32,7 +30,7 @@ def compute_ssim(img1, img2, data_range=1.0):
     return calc_ssim(img1.unsqueeze(0), img2.unsqueeze(0), data_range=data_range).item()
 
 
-torch.cuda.empty_cache()
+# torch.cuda.empty_cache()
 os.environ["CUDA_VISIBLE_DEVICES"] = "6,7"
 os.environ["PYTORCH_CUDA_ALLOC_CONF"] = "expandable_segments:True"
 device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
@@ -112,27 +110,19 @@ def main():
 
         if opt.model_name == "DnCNN":
             model = DnCNN(channels=1, num_of_layers=opt.num_of_layers).to(device)
-        elif opt.model_name == "UNet":
-            model = RicianDenoisingUNet(in_channels=1, out_channels=1).to(device)
         elif opt.model_name == "se":
             model = HybridDnCNN(channels=1, num_of_layers=opt.num_of_layers).to(device)
-        elif opt.model_name == "pre":
-            model = HybridDnCNNWithPreFilter(channels=1, num_of_layers=opt.num_of_layers, features=64,
-                                             num_iterations=3, lambda_val=0.125, kappa=30.0)
-        elif opt.model_name == "filter":
-            model = HybridDnCNNWithLearnableFilter(channels=1, num_of_layers=opt.num_of_layers).to(device)
-        elif opt.model_name == "hybrid":
-            model = HybridDnCNNWithFilter(channels=1, num_of_layers=opt.num_of_layers).to(device)
-        elif opt.model_name == "bilateral":
+        elif opt.model_name == "hybrid_MSSE_DnCNN":
             model = HybridDnCNNWithPreprocessing(channels=1, num_of_layers=opt.num_of_layers, gamma=1.5, alpha=0.4).to(device)
         elif opt.model_name == "hybrid_FFNet":
-            opt.num_of_layers = 10
             model = HybridFFDNetWithPreprocessing(channels=1, num_of_layers=opt.num_of_layers, gamma=1.5, alpha=0.4,
-                                                  scale_factor=2, noise_level=25/255).to(device)
+                                                scale_factor=2, noise_level=25/255).to(device)
         elif opt.model_name == "FFDNet":
-            opt.num_of_layers = 10
-            model = FFDNet(channels=1, num_of_layers=opt.num_of_layers, features=64, scale_factor=2,
-                           noise_level=25/255).to(device)
+            model = FFDNet(channels=1, num_of_layers=opt.num_of_layers, features=64, scale_factor=2, noise_level=25/255).to(device)
+        elif opt.model_name == "no_se":
+            model = HybridDnCNN_NoSE_WithPreprocessing(channels=1, num_of_layers=opt.num_of_layers, gamma=1.5, alpha=0.4).to(device)
+        elif opt.model_name == "no_ms":
+            model = HybridDnCNN_NoMultiScale_WithPreprocessing(channels=1, num_of_layers=opt.num_of_layers, gamma=1.5, alpha=0.4).to(device)
         else:
             raise ValueError("Invalid model name")
 
@@ -172,3 +162,4 @@ def main():
 
 if __name__ == "__main__":
     main()
+    

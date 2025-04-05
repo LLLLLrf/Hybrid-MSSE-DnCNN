@@ -8,12 +8,12 @@ from dataset import MRIDenoisingDataset
 from utils import batch_PSNR, batch_SSIM
 from torchvision import transforms
 import datetime
-from DnCNN import DnCNN
-from SE_model import HybridDnCNN
-from Hybrid_MSSE_DnCNN import HybridDnCNNWithPreprocessing
-from hybrid_FFDNet import HybridFFDNetWithPreprocessing
-from FFDNet import FFDNet
-from no_se_model import HybridDnCNN_NoMultiScale_WithPreprocessing, HybridDnCNN_NoSE_WithPreprocessing
+from models.DnCNN import DnCNN
+from models.SE_model import HybridDnCNN
+from models.Hybrid_MSSE_DnCNN import HybridDnCNNWithPreprocessing
+from models.hybrid_FFDNet import HybridFFDNetWithPreprocessing
+from models.FFDNet import FFDNet
+from models.no_se_model import HybridDnCNN_NoMultiScale_WithPreprocessing, HybridDnCNN_NoSE_WithPreprocessing
 
 # torch.cuda.empty_cache()
 # torch.cuda.ipc_collect()
