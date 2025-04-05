@@ -1,5 +1,5 @@
 # Hybrid-MSSE-DnCNN Model
-A improved version of DnCNN for image denoising
+An improved version of DnCNN for image denoising
 
 ## Model Structure
 ![Model Structure](./assets/Hybrid-MSSE-DnCNN.png)
