@@ -1,0 +1,179 @@
+import torch
+import torch.nn as nn
+from torch.utils.data import DataLoader, random_split
+from torchvision import transforms
+import torchvision
+from dataset import MRIDenoisingDataset
+from utils import batch_PSNR, batch_SSIM
+import os
+from DnCNN import DnCNN
+from SE_model import HybridDnCNN
+from Hybrid_MSSE_DnCNN import HybridDnCNNWithPreprocessing
+from hybrid_FFDNet import HybridFFDNetWithPreprocessing
+from FFDNet import FFDNet
+from no_se_model import HybridDnCNN_NoMultiScale_WithPreprocessing, HybridDnCNN_NoSE_WithPreprocessing
+
+
+torch.cuda.empty_cache()
+os.environ["CUDA_VISIBLE_DEVICES"] = "6,7"
+os.environ["PYTORCH_CUDA_ALLOC_CONF"] = "expandable_segments:True"
+device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
+model_list=["DnCNN","bilateral","bilateral","se","FFDNet","hybrid_FFNet"]
+ckps=["logs/experiment_DnCNN_20250313-013010/best_model.pth",
+      "logs/experiment_bilateral_20250317-034747/best_model.pth",
+      "logs/experiment_bilateral_20250321-010647/best_model.pth",
+      "logs/experiment_se_20250314-025447/best_model.pth",
+      "logs/experiment_FFDNet_20250319-023616/best_model.pth",
+      "logs/experiment_hybrid_FFNet_20250319-113209/best_model.pth"
+    ]
+
+# 配置参数
+class Opt:
+    batchSize = 8
+    val_ratio = 0.2
+    num_of_layers = 17
+    model_name = "se"
+    checkpoint = "logs/experiment_se_20250314-025447/best_model.pth"
+    s_root = "s-data"
+    n_root = "n-data25"
+
+# whether to save the denoised images
+save=0
+
+def main():
+    opt = Opt()
+    
+    # 加载数据集
+    full_dataset = MRIDenoisingDataset(
+        s_root=opt.s_root,
+        n_root=opt.n_root,
+        transform=transforms.Compose([
+            transforms.ToTensor(),
+            transforms.Normalize(mean=[0.5], std=[0.5])
+        ])
+    )
+    
+    # make sure using the same random seed for train/val split
+    torch.manual_seed(3407)
+    train_size = int((1 - opt.val_ratio) * len(full_dataset))
+    val_size = len(full_dataset) - train_size
+    _, val_set = random_split(full_dataset, [train_size, val_size])
+    
+    loader_val = DataLoader(val_set, batch_size=opt.batchSize, shuffle=False, num_workers=4)
+    
+    def adapt_state_dict(model, loaded_state_dict):
+        """
+        自动适配加载的 state_dict:
+        1. 去除 "module." 前缀（如果存在）。
+        2. 如果模型的所有 key 都有一个共同前缀，而 loaded_state_dict 中没有，则为所有 key 添加该前缀。
+        """
+        # 1. 去掉 "module." 前缀
+        new_state_dict = {}
+        for k, v in loaded_state_dict.items():
+            new_k = k.replace("module.", "")
+            new_state_dict[new_k] = v
+
+        # 2. 获取当前模型的 state_dict keys 和加载的 keys
+        model_keys = list(model.state_dict().keys())
+        loaded_keys = list(new_state_dict.keys())
+
+        # 检查模型的 key 是否都有统一前缀（例如 "hybrid_dncnn"）
+        prefixes = set(k.split('.')[0] for k in model_keys if '.' in k)
+        if len(prefixes) == 1:
+            prefix = list(prefixes)[0]
+            # 如果加载的 key 里没有该前缀，则为每个 key 添加前缀
+            if not any(k.startswith(prefix + ".") for k in loaded_keys):
+                adapted_state_dict = {}
+                for k, v in new_state_dict.items():
+                    adapted_state_dict[prefix + "." + k] = v
+                return adapted_state_dict
+
+        return new_state_dict
+
+
+    for ind, model_name  in enumerate(model_list):
+        opt.checkpoint = ckps[ind]
+        opt.model_name = model_name
+        
+
+        # 模型初始化
+        if opt.model_name == "DnCNN":
+            model = DnCNN(channels=1, num_of_layers=opt.num_of_layers).to(device)
+        elif opt.model_name == "se":
+            model = HybridDnCNN(channels=1, num_of_layers=opt.num_of_layers).to(device)
+        elif opt.model_name == "hybrid_MSSE_DnCNN":
+            model = HybridDnCNNWithPreprocessing(channels=1, num_of_layers=opt.num_of_layers, gamma=1.5, alpha=0.4).to(device)
+        elif opt.model_name == "hybrid_FFNet":
+            model = HybridFFDNetWithPreprocessing(channels=1, num_of_layers=opt.num_of_layers, gamma=1.5, alpha=0.4,
+                                                scale_factor=2, noise_level=25/255).to(device)
+        elif opt.model_name == "FFDNet":
+            model = FFDNet(channels=1, num_of_layers=opt.num_of_layers, features=64, scale_factor=2, noise_level=25/255).to(device)
+        elif opt.model_name == "no_se":
+            model = HybridDnCNN_NoSE_WithPreprocessing(channels=1, num_of_layers=opt.num_of_layers, gamma=1.5, alpha=0.4).to(device)
+        elif opt.model_name == "no_ms":
+            model = HybridDnCNN_NoMultiScale_WithPreprocessing(channels=1, num_of_layers=opt.num_of_layers, gamma=1.5, alpha=0.4).to(device)
+        else:
+            raise ValueError("Invalid model name")
+        
+        state_dict = torch.load(opt.checkpoint)
+        # print(model.state_dict().keys())
+        # print(state_dict.keys())
+        # exit()
+        # if not opt.model_name == "FFDNet":
+        adapted_state_dict = adapt_state_dict(model, state_dict)
+        model.load_state_dict(adapted_state_dict)
+
+        # model.load_state_dict(torch.load(opt.checkpoint))
+        model.eval()
+    
+        
+        # 测试验证集
+        total_psnr = 0.0
+        with torch.no_grad():
+            for noisy, clean in loader_val:
+                noisy = noisy.to(device)
+                clean = clean.to(device)
+                pred_noise = model(noisy)
+                denoised = torch.clamp(noisy - pred_noise, -1.0, 1.0)
+                total_psnr += batch_PSNR(denoised, clean, data_range=2.0)
+                if save:
+                    break
+            if save:
+                # 保存对比图
+                os.makedirs("results", exist_ok=True)
+                os.makedirs(f"results/{model_name}", exist_ok=True)
+                def unnormalize(img, mean=0.5, std=0.5):
+                    return img * std + mean
+
+                # 反归一化并保存
+                for i in range(opt.batchSize):
+                    torchvision.utils.save_image(unnormalize(denoised[i]), f"results/{model_name}/denoised_{i}.png")
+                    torchvision.utils.save_image(unnormalize(pred_noise[i]), f"results/{model_name}/pred_noise_{i}.png")
+                    torchvision.utils.save_image(unnormalize(clean[i]), f"results/{model_name}/clean_{i}.png")
+                    torchvision.utils.save_image(unnormalize(noisy[i]), f"results/{model_name}/noisy_{i}.png")
+                
+                # 计算平均PSNR
+                avg_psnr = total_psnr
+                # avg_psnr = total_psnr / len(loader_val)
+                # print(f"Validation PSNR: {avg_psnr:.2f}")
+                
+                def count_parameters(model):
+                    return sum(p.numel() for p in model.parameters() if p.requires_grad)
+                
+                param_num = count_parameters(model)
+                
+                with open("results/psnr.txt", "a") as f:
+                    f.write(f"model_name: {model_name}\n")
+                    f.write(f"param_num: {param_num}\n")
+                    f.write(f"Validation PSNR: {avg_psnr:.2f}\n")
+            else:
+                avg_psnr = total_psnr / len(loader_val)
+                
+            print("model_name: ", model_name)
+            print(f"Validation PSNR: {avg_psnr:.2f}")
+    
+    
+
+if __name__ == "__main__":
+    main()
+

@@ -1,0 +1,12 @@
+/data
+/.vscode
+__pycache__
+/paper
+/n-data15
+/n-data25
+/n-data50
+/s-data
+# /logs
+/Reimplement
+/Evaluate_Param
+*.localdomain
