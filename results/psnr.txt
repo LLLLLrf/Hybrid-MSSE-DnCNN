@@ -1,0 +1,18 @@
+model_name: DnCNN
+param_num: 556032
+Validation PSNR: 31.85
+model_name: bilateral
+param_num: 6017408
+Validation PSNR: 33.60
+model_name: bilateral
+param_num: 6017408
+Validation PSNR: 33.32
+model_name: se
+param_num: 6017408
+Validation PSNR: 33.49
+model_name: FFDNet
+param_num: 302848
+Validation PSNR: 32.98
+model_name: hybrid_FFNet
+param_num: 302848
+Validation PSNR: 32.96
