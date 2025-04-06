@@ -25,7 +25,7 @@ An improved version of DnCNN for MRI denoising
 ## Training Process
 
 <div align=center>
-    <img src="./assets/Train.png" alt="Training Process" width="60%">
+    <img src="./assets/Train.png" alt="Training Process" width="80%">
 </div>
 
 ## Installation
