@@ -4,6 +4,8 @@ An improved version of DnCNN for MRI denoising
 ## Model Structure
 ![Model Structure](./assets/Hybrid-MSSE-DnCNN.png)
 
+<div align=center>
+
 ### **Comparison of DnCNN and Hybrid-MSSE-DnCNN**
 | Feature            | DnCNN | Hybrid-MSSE-DnCNN |
 |--------------------|-------|------------------|
@@ -13,6 +15,7 @@ An improved version of DnCNN for MRI denoising
 | **1x1 Convolution for Reduction** | ❌ No  | ✅ Yes (After multi-scale feature extraction) |
 | **Batch Normalization** | ✅ Yes | ✅ Yes |
 | **Residual Learning** | ✅ Yes | ✅ Yes |
+</div>
 
 ## Results
 ![Boxplot](./assets/boxplot.png)
@@ -20,7 +23,8 @@ An improved version of DnCNN for MRI denoising
 
 
 ## Training Process
-<div style="text-align: center;">
+
+<div align=center>
     <img src="./assets/Train.png" alt="Training Process" width="80%">
 </div>
 
