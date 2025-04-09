@@ -28,7 +28,7 @@ An improved version of DnCNN for MRI denoising
     <img src="./assets/Train.png" alt="Training Process" width="80%">
 </div>
 
-## Installation
+## Environment Setup
 ```bash
 conda env create -f environment.yml
 ```
