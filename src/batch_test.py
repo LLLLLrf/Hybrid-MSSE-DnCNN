@@ -30,12 +30,10 @@ def compute_ssim(img1, img2, data_range=1.0):
     return calc_ssim(img1.unsqueeze(0), img2.unsqueeze(0), data_range=data_range).item()
 
 
-# torch.cuda.empty_cache()
-os.environ["CUDA_VISIBLE_DEVICES"] = "6,7"
+# os.environ["CUDA_VISIBLE_DEVICES"] = "6,7"
 os.environ["PYTORCH_CUDA_ALLOC_CONF"] = "expandable_segments:True"
 device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
 
-# 待测试的模型名称列表及对应的 checkpoint 路径
 model_list = ["DnCNN", "bilateral", "bilateral", "se", "FFDNet", "hybrid_FFNet"]
 ckps = [
     "logs/experiment_DnCNN_20250313-013010/best_model.pth",
@@ -54,8 +52,8 @@ class Opt:
     model_name = "se"
     checkpoint = "logs/experiment_se_20250314-025447/best_model.pth"
 
-save = False  # 是否保存对比图像
-sample_num = 500  # 每个模型评估的图像数量
+save = False
+sample_num = 500
 
 def main():
     opt = Opt()

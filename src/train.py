@@ -18,7 +18,7 @@ from models.no_se_model import HybridDnCNN_NoMultiScale_WithPreprocessing, Hybri
 # torch.cuda.empty_cache()
 # torch.cuda.ipc_collect()
 
-os.environ["CUDA_VISIBLE_DEVICES"] = "2,3,4,5,6,7"
+# os.environ["CUDA_VISIBLE_DEVICES"] = "2,3,4,5,6,7"
 os.environ["PYTORCH_CUDA_ALLOC_CONF"] = "expandable_segments:True"
 device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
 

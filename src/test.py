@@ -15,9 +15,10 @@ from models.no_se_model import HybridDnCNN_NoMultiScale_WithPreprocessing, Hybri
 
 
 torch.cuda.empty_cache()
-os.environ["CUDA_VISIBLE_DEVICES"] = "6,7"
+# os.environ["CUDA_VISIBLE_DEVICES"] = "6,7"
 os.environ["PYTORCH_CUDA_ALLOC_CONF"] = "expandable_segments:True"
 device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
+
 model_list=["DnCNN","bilateral","bilateral","se","FFDNet","hybrid_FFNet"]
 ckps=["logs/experiment_DnCNN_20250313-013010/best_model.pth",
       "logs/experiment_bilateral_20250317-034747/best_model.pth",
