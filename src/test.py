@@ -27,12 +27,12 @@ ckps=["logs/experiment_DnCNN_20250313-013010/best_model.pth",
       "logs/experiment_hybrid_FFNet_20250319-113209/best_model.pth"
     ]
 
-# 配置参数
+# Configuration
 class Opt:
     batchSize = 8
     val_ratio = 0.2
     num_of_layers = 17
-    model_name = "se"
+    model_name = ""
     checkpoint = "logs/experiment_se_20250314-025447/best_model.pth"
     s_root = "s-data"
     n_root = "n-data25"
@@ -62,26 +62,18 @@ def main():
     loader_val = DataLoader(val_set, batch_size=opt.batchSize, shuffle=False, num_workers=4)
     
     def adapt_state_dict(model, loaded_state_dict):
-        """
-        自动适配加载的 state_dict:
-        1. 去除 "module." 前缀（如果存在）。
-        2. 如果模型的所有 key 都有一个共同前缀，而 loaded_state_dict 中没有，则为所有 key 添加该前缀。
-        """
-        # 1. 去掉 "module." 前缀
+
         new_state_dict = {}
         for k, v in loaded_state_dict.items():
             new_k = k.replace("module.", "")
             new_state_dict[new_k] = v
 
-        # 2. 获取当前模型的 state_dict keys 和加载的 keys
         model_keys = list(model.state_dict().keys())
         loaded_keys = list(new_state_dict.keys())
 
-        # 检查模型的 key 是否都有统一前缀（例如 "hybrid_dncnn"）
         prefixes = set(k.split('.')[0] for k in model_keys if '.' in k)
         if len(prefixes) == 1:
             prefix = list(prefixes)[0]
-            # 如果加载的 key 里没有该前缀，则为每个 key 添加前缀
             if not any(k.startswith(prefix + ".") for k in loaded_keys):
                 adapted_state_dict = {}
                 for k, v in new_state_dict.items():
@@ -96,7 +88,7 @@ def main():
         opt.model_name = model_name
         
 
-        # 模型初始化
+        # Model initialization
         if opt.model_name == "DnCNN":
             model = DnCNN(channels=1, num_of_layers=opt.num_of_layers).to(device)
         elif opt.model_name == "se":
@@ -116,10 +108,6 @@ def main():
             raise ValueError("Invalid model name")
         
         state_dict = torch.load(opt.checkpoint)
-        # print(model.state_dict().keys())
-        # print(state_dict.keys())
-        # exit()
-        # if not opt.model_name == "FFDNet":
         adapted_state_dict = adapt_state_dict(model, state_dict)
         model.load_state_dict(adapted_state_dict)
 
@@ -127,7 +115,7 @@ def main():
         model.eval()
     
         
-        # 测试验证集
+        # Test the model
         total_psnr = 0.0
         with torch.no_grad():
             for noisy, clean in loader_val:
@@ -139,20 +127,20 @@ def main():
                 if save:
                     break
             if save:
-                # 保存对比图
+                # Save the denoised images
                 os.makedirs("results", exist_ok=True)
                 os.makedirs(f"results/{model_name}", exist_ok=True)
                 def unnormalize(img, mean=0.5, std=0.5):
                     return img * std + mean
 
-                # 反归一化并保存
+                # unnormalize and save the images
                 for i in range(opt.batchSize):
                     torchvision.utils.save_image(unnormalize(denoised[i]), f"results/{model_name}/denoised_{i}.png")
                     torchvision.utils.save_image(unnormalize(pred_noise[i]), f"results/{model_name}/pred_noise_{i}.png")
                     torchvision.utils.save_image(unnormalize(clean[i]), f"results/{model_name}/clean_{i}.png")
                     torchvision.utils.save_image(unnormalize(noisy[i]), f"results/{model_name}/noisy_{i}.png")
                 
-                # 计算平均PSNR
+                # calculate the PSNR
                 avg_psnr = total_psnr
                 # avg_psnr = total_psnr / len(loader_val)
                 # print(f"Validation PSNR: {avg_psnr:.2f}")
@@ -176,4 +164,3 @@ def main():
 
 if __name__ == "__main__":
     main()
-

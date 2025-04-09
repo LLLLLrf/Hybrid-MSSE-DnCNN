@@ -36,6 +36,7 @@ conda env create -f environment.yml
 ```bash
 python ./preprocess.py
 ```
+
 4. Create Noisy Data, set the *noise_level* to 15, 25, 50 to get different noise levels
 ```bash
 python ./add_noise.py

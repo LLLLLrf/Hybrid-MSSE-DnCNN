@@ -4,6 +4,9 @@ from scipy import ndimage
 import imageio.v2 as imageio
 import os
 
+# Set the noise level here
+noise_level = 25
+
 def add_gaussian_noise(image, mean=0, std=25):
     noise = np.random.normal(mean, std, image.shape)
     noisy_image = image + noise
@@ -15,7 +18,6 @@ def add_rician_noise(image, noise_level=25):
     noisy_image = np.sqrt(real**2 + imag**2)
     return np.clip(noisy_image, 0, 255)
 
-noise_level = 25
 for folder in os.listdir('./s-data/'):
     for mri in os.listdir('./s-data/' + folder):
         for slice in os.listdir('./s-data/' + folder + '/' + mri):

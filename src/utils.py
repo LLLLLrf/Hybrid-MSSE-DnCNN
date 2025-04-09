@@ -7,7 +7,6 @@ from skimage.metrics import peak_signal_noise_ratio as compare_psnr
 from skimage.metrics import structural_similarity as compare_ssim
 
 def batch_PSNR(output, target, data_range):
-    # 确保数据在CPU且转为numpy
     output = output.cpu().detach().numpy()
     target = target.cpu().detach().numpy()
     
@@ -18,17 +17,13 @@ def batch_PSNR(output, target, data_range):
 
 
 def batch_SSIM(output, target, data_range, win_size=7):
-    # 确保数据在CPU且转为numpy
     output = output.cpu().detach().numpy()
     target = target.cpu().detach().numpy()
 
     total_ssim = 0.0
     for i in range(output.shape[0]):
-        # 获取当前图像的最小边
         min_side = min(target[i].shape[:2])
-        # 确保 win_size 是一个奇数并且小于或等于 min_side
         adjusted_win_size = min(win_size, min_side if min_side % 2 == 1 else min_side - 1)
-        # 检查图像尺寸是否足够大
         if min_side >= adjusted_win_size:
             total_ssim += compare_ssim(target[i], output[i], data_range=data_range, multichannel=True, win_size=adjusted_win_size, use_sample_covariance=False)
         else:
@@ -47,13 +42,6 @@ def weights_init_kaiming(m):
         m.weight.data.normal_(mean=0, std=math.sqrt(2./9./64.)).clamp_(-0.025,0.025)
         nn.init.constant(m.bias.data, 0.0)
 
-# def batch_PSNR(img, imclean, data_range):
-#     Img = img.data.cpu().numpy().astype(np.float32)
-#     Iclean = imclean.data.cpu().numpy().astype(np.float32)
-#     PSNR = 0
-#     for i in range(Img.shape[0]):
-#         PSNR += compare_psnr(Iclean[i,:,:,:], Img[i,:,:,:], data_range=data_range)
-#     return (PSNR/Img.shape[0])
 
 def data_augmentation(image, mode):
     out = np.transpose(image, (1,2,0))

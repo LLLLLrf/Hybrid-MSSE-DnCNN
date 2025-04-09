@@ -37,7 +37,7 @@ def get_model_attr(model, attr_name):
 class Opt:
     batchSize = 64
     num_of_layers = 17
-    epochs = 40
+    epochs = 50
     milestone = 30
     lr = 1e-4
     model_name="hybrid_MSSE_DnCNN"
@@ -70,7 +70,7 @@ def main():
     loader_train = DataLoader(train_set, batch_size=opt.batchSize, shuffle=True, num_workers=4)
     loader_val = DataLoader(val_set, batch_size=opt.batchSize, shuffle=False, num_workers=4)
     
-    # 模型初始化
+    # Model initialization
     if opt.model_name == "DnCNN":
         model = DnCNN(channels=1, num_of_layers=opt.num_of_layers).to(device)
     elif opt.model_name == "se":
@@ -97,42 +97,42 @@ def main():
         model = nn.DataParallel(model)
         model = model.to(device)
     
-    # 训练循环
+    # Training loop
     writer = SummaryWriter(opt.outf)
     best_psnr = 0.0
     
     for epoch in range(opt.epochs):
         model.train()
-        # 学习率调整
+        # Adjust learning rate
         if epoch >= opt.milestone:
             optimizer.param_groups[0]['lr'] = opt.lr / 10.0
         
-        # 训练批次
+        # Training phase
         for i, (noisy, clean) in enumerate(loader_train):
             noisy = noisy.to(device)
             clean = clean.to(device)
             
             optimizer.zero_grad()
-            pred_noise = model(noisy)  # 预测噪声
-            loss = criterion(pred_noise, (noisy - clean))  # 关键修正：目标为噪声
+            pred_noise = model(noisy)  # Noise Prediction
+            loss = criterion(pred_noise, (noisy - clean))
             loss.backward()
             optimizer.step()
             
-            # 计算PSNR和SSIM
+            # Calculate PSNR and SSIM
             with torch.no_grad():
                 denoised = torch.clamp(noisy - pred_noise, -1.0, 1.0)
-                psnr = batch_PSNR(denoised, clean, data_range=2.0)  # 数据范围[-1,1]即2.0
+                psnr = batch_PSNR(denoised, clean, data_range=2.0)
                 ssim = batch_SSIM(denoised, clean, data_range=2.0)
                 
             print(f"Epoch [{epoch+1}/{opt.epochs}] Batch [{i+1}/{len(loader_train)}] "
                 f"Loss: {loss.item():.4f} PSNR: {psnr:.2f} SSIM: {ssim:.4f}")
             
-            # TensorBoard记录
+            # TensorBoard logging
             writer.add_scalar('Loss/train', loss.item(), epoch*len(loader_train)+i)
             writer.add_scalar('PSNR/train', psnr, epoch*len(loader_train)+i)
             writer.add_scalar('SSIM/train', ssim, epoch*len(loader_train)+i)
         
-        # 验证阶段
+        # Validation phase
         model.eval()
         val_psnr = 0.0
         with torch.no_grad():
@@ -148,7 +148,7 @@ def main():
         writer.add_scalar('PSNR/val', val_psnr, epoch)
         print(f"Validation PSNR: {val_psnr:.2f}")
         
-        # 保存最佳模型
+        # Save best model
         if val_psnr > best_psnr:
             best_psnr = val_psnr
             torch.save(model.state_dict(), os.path.join(opt.outf, 'best_model.pth'))
