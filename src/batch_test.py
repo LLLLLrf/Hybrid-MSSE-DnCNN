@@ -44,21 +44,23 @@ ckps = [
     "logs/experiment_hybrid_FFNet_20250319-113209/best_model.pth"
 ]
 
-# 配置参数
+# Configuration
 class Opt:
     batchSize = 8
     val_ratio = 0.2
     num_of_layers = 17
-    model_name = "se"
-    checkpoint = "logs/experiment_se_20250314-025447/best_model.pth"
+    model_name = ""
+    checkpoint = ""
 
-save = False
+# Number of selected samples to evaluate
 sample_num = 500
+save = False
+
 
 def main():
     opt = Opt()
     
-    # 加载数据集
+    # Load dataset
     full_dataset = MRIDenoisingDataset(
         s_root="s-data",
         n_root="n-data25",
@@ -73,12 +75,12 @@ def main():
     val_size = len(full_dataset) - train_size
     _, val_set = random_split(full_dataset, [train_size, val_size])
     
-    # 抽样 500 个索引
+    # Randomly sample 500 indices
     sampled_indices = random.sample(range(len(val_set)), min(sample_num, len(val_set)))
     sampled_subset = torch.utils.data.Subset(val_set, sampled_indices)
     loader_val = DataLoader(sampled_subset, batch_size=opt.batchSize, shuffle=False, num_workers=4)
 
-    # 保存 CSV 的目录
+    # Save results to CSV
     os.makedirs("results", exist_ok=True)
     result_csv = open("results/model_eval_results.csv", "w", newline="")
     csv_writer = csv.writer(result_csv)

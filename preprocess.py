@@ -1,4 +1,3 @@
-# 读取data/IXI-DTI中的nii.gz文件，将MRI数据切片，另存至s-data/IXI-DTI中
 import nibabel as nib
 import numpy as np
 import os
