@@ -29,5 +29,5 @@ for i in dir:
         if file.endswith(".nii.gz"):
             data = read_nii(os.path.join(i, file))
             if data is not None:
-                save_slices(data, os.path.join("s2-" + i, file.split(".")[0]))
+                save_slices(data, os.path.join("s-" + i, file.split(".")[0]))
 

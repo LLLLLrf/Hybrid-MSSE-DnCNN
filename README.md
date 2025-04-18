@@ -48,6 +48,7 @@ python ./add_noise.py
 
 
 ## Training
+Make sure is `python ./src/train.py`, instead of `python train.py`
 ```bash
 python ./src/train.py
 ```
@@ -62,3 +63,6 @@ python ./src/test.py
 python ./src/batch_test.py
 python ./src/significance.py
 ```
+
+## File Structure
+![tree](./assets/DirTree.png)	
