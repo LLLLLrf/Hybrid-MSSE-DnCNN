@@ -140,3 +140,4 @@ if __name__ == "__main__":
     input_tensor = torch.randn(1, 1, 256, 256)
     output = model(input_tensor)
     print("Output shape:", output.shape)
+    print("model:", model)

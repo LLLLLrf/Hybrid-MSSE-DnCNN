@@ -17,6 +17,7 @@ def add_rician_noise(image, noise_level=25):
     imag = np.random.normal(0, noise_level, image.shape)
     noisy_image = np.sqrt(real**2 + imag**2)
     return np.clip(noisy_image, 0, 255)
+# Rician Noise Fomula: sqrt((I + N)^2 + (N)^2)
 
 for folder in os.listdir('./s-data/'):
     for mri in os.listdir('./s-data/' + folder):
